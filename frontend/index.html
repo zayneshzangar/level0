@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Service</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Order Lookup</h1>
+        <div class="input-group">
+            <input type="text" id="orderUid" placeholder="Enter Order UID" required>
+            <button onclick="fetchOrder()">Get Order</button>
+        </div>
+        <div id="result" class="result"></div>
+        <div id="error" class="error"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
