@@ -169,8 +169,6 @@ source scripts/env.sh
 go run cmd/consumer/main.go
 ```
 
-Откройте в браузере: [http://localhost:8080](http://localhost:8080)
-
 Пример запроса через `curl`:
 
 ```bash
