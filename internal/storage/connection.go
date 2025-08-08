@@ -19,7 +19,7 @@ func NewDatabaseConnection(cfg *config.Config) (*sql.DB, Store, error) {
 }
 
 // NewPostgresRepository создает подключение к Postgres
-func NewPostgresRepository(cfg *config.Config) (*sql.DB,Store, error) {
+func NewPostgresRepository(cfg *config.Config) (*sql.DB, Store, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		cfg.DB.User,
 		cfg.DB.Password,

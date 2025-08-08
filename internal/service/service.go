@@ -8,7 +8,6 @@ import (
 	"sync"
 )
 
-
 type service struct {
 	store storage.Store
 	cache map[string]entity.Order

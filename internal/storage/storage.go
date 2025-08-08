@@ -102,9 +102,8 @@ func (s *Storage) SaveOrder(ctx context.Context, order entity.Order) error {
 	return nil
 }
 
-
 func (s *Storage) GetOrder(ctx context.Context, orderUID string) (entity.Order, error) {
-    rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.QueryContext(ctx, `
         SELECT 
             o.order_uid, o.track_number, o.entry, o.locale, o.internal_signature,
             o.customer_id, o.delivery_service, o.shardkey, o.sm_id, o.date_created, o.oof_shard,
@@ -119,49 +118,49 @@ func (s *Storage) GetOrder(ctx context.Context, orderUID string) (entity.Order, 
         INNER JOIN items i ON o.order_uid = i.order_uid
         WHERE o.order_uid = $1
         ORDER BY o.order_uid`, orderUID)
-    if err != nil {
-        return entity.Order{}, fmt.Errorf("failed to query order %s: %v", orderUID, err)
-    }
-    defer rows.Close()
+	if err != nil {
+		return entity.Order{}, fmt.Errorf("failed to query order %s: %v", orderUID, err)
+	}
+	defer rows.Close()
 
-    var order entity.Order
-    var items []entity.Item
-    found := false
+	var order entity.Order
+	var items []entity.Item
+	found := false
 
-    for rows.Next() {
-        var item entity.Item
-        err := rows.Scan(
-            &order.OrderUID, &order.TrackNumber, &order.Entry, &order.Locale,
-            &order.InternalSignature, &order.CustomerID, &order.DeliveryService,
-            &order.Shardkey, &order.SmID, &order.DateCreated, &order.OofShard,
-            &order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip,
-            &order.Delivery.City, &order.Delivery.Address, &order.Delivery.Region,
-            &order.Delivery.Email,
-            &order.Payment.Transaction, &order.Payment.RequestID, &order.Payment.Currency,
-            &order.Payment.Provider, &order.Payment.Amount, &order.Payment.PaymentDt,
-            &order.Payment.Bank, &order.Payment.DeliveryCost, &order.Payment.GoodsTotal,
-            &order.Payment.CustomFee,
-            &item.ChrtID, &item.TrackNumber, &item.Price, &item.Rid, &item.Name,
-            &item.Sale, &item.Size, &item.TotalPrice, &item.NmID, &item.Brand, &item.Status,
-        )
-        if err != nil {
-            return entity.Order{}, fmt.Errorf("failed to scan order %s: %v", orderUID, err)
-        }
+	for rows.Next() {
+		var item entity.Item
+		err := rows.Scan(
+			&order.OrderUID, &order.TrackNumber, &order.Entry, &order.Locale,
+			&order.InternalSignature, &order.CustomerID, &order.DeliveryService,
+			&order.Shardkey, &order.SmID, &order.DateCreated, &order.OofShard,
+			&order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip,
+			&order.Delivery.City, &order.Delivery.Address, &order.Delivery.Region,
+			&order.Delivery.Email,
+			&order.Payment.Transaction, &order.Payment.RequestID, &order.Payment.Currency,
+			&order.Payment.Provider, &order.Payment.Amount, &order.Payment.PaymentDt,
+			&order.Payment.Bank, &order.Payment.DeliveryCost, &order.Payment.GoodsTotal,
+			&order.Payment.CustomFee,
+			&item.ChrtID, &item.TrackNumber, &item.Price, &item.Rid, &item.Name,
+			&item.Sale, &item.Size, &item.TotalPrice, &item.NmID, &item.Brand, &item.Status,
+		)
+		if err != nil {
+			return entity.Order{}, fmt.Errorf("failed to scan order %s: %v", orderUID, err)
+		}
 
-        found = true
-        items = append(items, item)
-    }
+		found = true
+		items = append(items, item)
+	}
 
-    if !found {
-        return entity.Order{}, fmt.Errorf("order %s not found", orderUID)
-    }
+	if !found {
+		return entity.Order{}, fmt.Errorf("order %s not found", orderUID)
+	}
 
-    order.Items = items
-    return order, nil
+	order.Items = items
+	return order, nil
 }
 
 func (s *Storage) GetAllOrders(ctx context.Context) ([]entity.Order, error) {
-    rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.QueryContext(ctx, `
         SELECT 
             o.order_uid, o.track_number, o.entry, o.locale, o.internal_signature,
             o.customer_id, o.delivery_service, o.shardkey, o.sm_id, o.date_created, o.oof_shard,
@@ -175,50 +174,50 @@ func (s *Storage) GetAllOrders(ctx context.Context) ([]entity.Order, error) {
         INNER JOIN payments p ON o.order_uid = p.order_uid
         INNER JOIN items i ON o.order_uid = i.order_uid
         ORDER BY o.order_uid`)
-    if err != nil {
-        return nil, fmt.Errorf("failed to query all orders: %v", err)
-    }
-    defer rows.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to query all orders: %v", err)
+	}
+	defer rows.Close()
 
-    ordersMap := make(map[string]*entity.Order)
-    for rows.Next() {
-        var order entity.Order
-        var item entity.Item
-        err := rows.Scan(
-            &order.OrderUID, &order.TrackNumber, &order.Entry, &order.Locale,
-            &order.InternalSignature, &order.CustomerID, &order.DeliveryService,
-            &order.Shardkey, &order.SmID, &order.DateCreated, &order.OofShard,
-            &order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip,
-            &order.Delivery.City, &order.Delivery.Address, &order.Delivery.Region,
-            &order.Delivery.Email,
-            &order.Payment.Transaction, &order.Payment.RequestID, &order.Payment.Currency,
-            &order.Payment.Provider, &order.Payment.Amount, &order.Payment.PaymentDt,
-            &order.Payment.Bank, &order.Payment.DeliveryCost, &order.Payment.GoodsTotal,
-            &order.Payment.CustomFee,
-            &item.ChrtID, &item.TrackNumber, &item.Price, &item.Rid, &item.Name,
-            &item.Sale, &item.Size, &item.TotalPrice, &item.NmID, &item.Brand, &item.Status,
-        )
-        if err != nil {
-            return nil, fmt.Errorf("failed to scan order: %v", err)
-        }
+	ordersMap := make(map[string]*entity.Order)
+	for rows.Next() {
+		var order entity.Order
+		var item entity.Item
+		err := rows.Scan(
+			&order.OrderUID, &order.TrackNumber, &order.Entry, &order.Locale,
+			&order.InternalSignature, &order.CustomerID, &order.DeliveryService,
+			&order.Shardkey, &order.SmID, &order.DateCreated, &order.OofShard,
+			&order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip,
+			&order.Delivery.City, &order.Delivery.Address, &order.Delivery.Region,
+			&order.Delivery.Email,
+			&order.Payment.Transaction, &order.Payment.RequestID, &order.Payment.Currency,
+			&order.Payment.Provider, &order.Payment.Amount, &order.Payment.PaymentDt,
+			&order.Payment.Bank, &order.Payment.DeliveryCost, &order.Payment.GoodsTotal,
+			&order.Payment.CustomFee,
+			&item.ChrtID, &item.TrackNumber, &item.Price, &item.Rid, &item.Name,
+			&item.Sale, &item.Size, &item.TotalPrice, &item.NmID, &item.Brand, &item.Status,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan order: %v", err)
+		}
 
-        existingOrder, exists := ordersMap[order.OrderUID]
-        if !exists {
-            order.Items = []entity.Item{item}
-            ordersMap[order.OrderUID] = &order
-        } else {
-            existingOrder.Items = append(existingOrder.Items, item)
-        }
-    }
+		existingOrder, exists := ordersMap[order.OrderUID]
+		if !exists {
+			order.Items = []entity.Item{item}
+			ordersMap[order.OrderUID] = &order
+		} else {
+			existingOrder.Items = append(existingOrder.Items, item)
+		}
+	}
 
-    var orders []entity.Order
-    for _, order := range ordersMap {
-        orders = append(orders, *order)
-    }
+	var orders []entity.Order
+	for _, order := range ordersMap {
+		orders = append(orders, *order)
+	}
 
-    if len(orders) == 0 {
-        log.Printf("No complete orders found in database")
-    }
+	if len(orders) == 0 {
+		log.Printf("No complete orders found in database")
+	}
 
-    return orders, nil
+	return orders, nil
 }
