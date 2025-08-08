@@ -29,26 +29,8 @@ func NewService(store storage.Store) Service {
 }
 
 func (s *service) ProcessOrder(ctx context.Context, order entity.Order) error {
-	if order.OrderUID == "" {
-		log.Printf("Invalid order: empty order_uid")
-		return nil
-	}
-	if len(order.Items) == 0 {
-		log.Printf("Invalid order %s: empty items", order.OrderUID)
-		return nil
-	}
-	if order.Delivery.Name == "" || order.Delivery.Phone == "" {
-		log.Printf("Invalid order %s: invalid delivery (name: %s, phone: %s)",
-			order.OrderUID, order.Delivery.Name, order.Delivery.Phone)
-		return nil
-	}
-	if order.Payment.Amount < 0 {
-		log.Printf("Invalid order %s: negative payment amount (%d)",
-			order.OrderUID, order.Payment.Amount)
-		return nil
-	}
 
-	// Валидация с использованием validator
+	// Валидация с использованием validator (order.OrderUID, order.Items, order.Delivery.Name, order.Delivery.Phone, order.Payment.Amount)
 	validate := validator.New()
 	if err := validate.Struct(order); err != nil {
 		log.Printf("Invalid order %s: %v", order.OrderUID, err)
