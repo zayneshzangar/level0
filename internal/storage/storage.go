@@ -151,6 +151,10 @@ func (s *Storage) GetOrder(ctx context.Context, orderUID string) (entity.Order, 
 		items = append(items, item)
 	}
 
+	if err := rows.Err(); err != nil {
+		return entity.Order{}, fmt.Errorf("error iterating rows for order %s: %v", orderUID, err)
+	}
+
 	if !found {
 		return entity.Order{}, fmt.Errorf("order %s not found", orderUID)
 	}
@@ -208,6 +212,10 @@ func (s *Storage) GetAllOrders(ctx context.Context) ([]entity.Order, error) {
 		} else {
 			existingOrder.Items = append(existingOrder.Items, item)
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %v", err)
 	}
 
 	var orders []entity.Order

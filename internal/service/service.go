@@ -6,19 +6,25 @@ import (
 	"order/internal/entity"
 	"order/internal/storage"
 	"sync"
+
+	"github.com/go-playground/validator/v10"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 type service struct {
 	store storage.Store
-	cache map[string]entity.Order
-	mu    sync.RWMutex
+	cache *lru.Cache[string, entity.Order]
+	mu    sync.Mutex
 }
 
 func NewService(store storage.Store) Service {
+	cache, err := lru.New[string, entity.Order](1000) // Лимит 1000 заказов
+	if err != nil {
+		log.Fatalf("Failed to create LRU cache: %v", err)
+	}
 	return &service{
 		store: store,
-		cache: make(map[string]entity.Order),
-		mu:    sync.RWMutex{},
+		cache: cache,
 	}
 }
 
@@ -42,6 +48,13 @@ func (s *service) ProcessOrder(ctx context.Context, order entity.Order) error {
 		return nil
 	}
 
+	// Валидация с использованием validator
+	validate := validator.New()
+	if err := validate.Struct(order); err != nil {
+		log.Printf("Invalid order %s: %v", order.OrderUID, err)
+		return nil
+	}
+
 	// Сохранение в БД
 	if err := s.store.SaveOrder(ctx, order); err != nil {
 		log.Printf("Failed to save order %s: %v", order.OrderUID, err)
@@ -50,53 +63,46 @@ func (s *service) ProcessOrder(ctx context.Context, order entity.Order) error {
 
 	// Обновление кэша
 	s.mu.Lock()
-	s.cache[order.OrderUID] = order
+	s.cache.Add(order.OrderUID, order)
 	s.mu.Unlock()
 	log.Printf("Order %s added to cache", order.OrderUID)
-
 	return nil
 }
 
 func (s *service) GetOrder(ctx context.Context, orderUID string) (entity.Order, error) {
-	// Проверка кэша
-	s.mu.RLock()
-	order, found := s.cache[orderUID]
-	s.mu.RUnlock()
-	if found {
+	s.mu.Lock()
+	order, ok := s.cache.Get(orderUID)
+	s.mu.Unlock()
+	if ok {
 		log.Printf("Order %s found in cache", orderUID)
 		return order, nil
 	}
 
-	// Загрузка из БД
-	log.Printf("Order %s not in cache, fetching from DB", orderUID)
 	order, err := s.store.GetOrder(ctx, orderUID)
 	if err != nil {
-		log.Printf("Failed to fetch order %s from DB: %v", orderUID, err)
+		log.Printf("Failed to get order %s from DB: %v", orderUID, err)
 		return entity.Order{}, err
 	}
 
-	// Обновление кэша
 	s.mu.Lock()
-	s.cache[orderUID] = order
+	s.cache.Add(orderUID, order)
 	s.mu.Unlock()
-	log.Printf("Order %s added to cache from DB", orderUID)
-
+	log.Printf("Order %s fetched from DB and added to cache", orderUID)
 	return order, nil
 }
 
 func (s *service) LoadCacheFromDB(ctx context.Context) error {
 	orders, err := s.store.GetAllOrders(ctx)
 	if err != nil {
-		log.Printf("Failed to load cache from DB: %v", err)
+		log.Printf("Failed to load orders from DB: %v", err)
 		return err
 	}
 
 	s.mu.Lock()
 	for _, order := range orders {
-		s.cache[order.OrderUID] = order
+		s.cache.Add(order.OrderUID, order)
 	}
 	s.mu.Unlock()
-	log.Printf("Loaded %d orders into cache", len(orders))
-
+	log.Printf("Loaded %d orders into cache", s.cache.Len())
 	return nil
 }

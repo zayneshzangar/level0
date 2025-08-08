@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"order/internal/entity"
 	"order/internal/service"
@@ -54,7 +55,8 @@ func (c *kafkaController) Consume(ctx context.Context) error {
 			// Чтение сообщения с таймаутом 1 секунда
 			msg, err := c.consumer.ReadMessage(1 * time.Second)
 			if err != nil {
-				if kafkaErr, ok := err.(kafka.Error); ok && kafkaErr.Code() == kafka.ErrTimedOut {
+				var kafkaErr kafka.Error
+				if errors.As(err, &kafkaErr) && kafkaErr.Code() == kafka.ErrTimedOut {
 					continue // Таймаут, продолжаем цикл
 				}
 				log.Printf("Failed to read message: %v", err)
