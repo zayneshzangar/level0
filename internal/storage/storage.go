@@ -18,11 +18,6 @@ func NewStorage(db *sql.DB) Store {
 }
 
 func (s *Storage) SaveOrder(ctx context.Context, order entity.Order) error {
-	// dateCreated, err := time.Parse(time.RFC3339, order.DateCreated)
-	// if err != nil {
-	// 	log.Printf("Failed to parse date_created %s: %v", order.DateCreated, err)
-	// 	return err
-	// }
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {

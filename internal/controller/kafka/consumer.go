@@ -12,11 +12,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-type KafkaController interface {
-	Consume(ctx context.Context) error
-	Close() error
-}
-
 type kafkaController struct {
 	consumer *kafka.Consumer
 	service  service.Service
